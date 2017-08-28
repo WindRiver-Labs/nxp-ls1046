@@ -1,0 +1,394 @@
+        NXP LS1046 Boards
+
+
+1. About this document
+======================
+This document describes the common and non-hardware specific information.
+Please refer to README.hardware for hardware specific information.
+
+Dependencies
+------------
+This layer depends on the oe-core version supplied with Wind River Linux
+and the wr-kernel layer.
+
+
+Maintenance
+-----------
+This layer is maintained by Wind River Systems, Inc.
+Contact <support@windriver.com> or your support representative for more
+information on submitting changes.
+
+
+Building the nxp-ls1046 layer
+-----------------------------
+This layer and wr-kernel layer should be added to bblayers.conf. This
+is done automatically when using the Wind River configure wrapper.
+
+
+License
+-------
+Copyright (C) 2017 Wind River Systems, Inc.
+
+The right to copy, distribute or otherwise make use of this software may
+be licensed only pursuant to the terms of an applicable Wind River license
+agreement. No license to Wind River intellectual properly rights is granted
+herein. All rights not licensed by Wind River are reserved by Wind River.
+
+Source code included in tree for individual recipes is under the LICENSE
+stated in each recipe (.bb file) unless other stated.
+
+
+2. BSP Kernel and RootFS Combination
+====================================
+
+The validity of WindRiver Linux kernel and RootFS combination for this BSP is
+in the table.
+The leftmost column of the table is the kernel type, and the top line is the
+RootFS type.
+'Y' in each content cell stands for the combination is supported; 'N' stands
+for not supported:
+
+--------------------------------------------------------------------
+| kernel/rootfs | glibc_std | glibc_small | glibc_cgl | glibc_tiny |
+--------------------------------------------------------------------
+|   standard    |     Y     |      Y      |     N     |     N      |
+--------------------------------------------------------------------
+|   preempt_rt  |     Y     |      Y      |     N     |     N      |
+--------------------------------------------------------------------
+|   cgl         |     N     |      N      |     y     |     N      |
+--------------------------------------------------------------------
+
+Note: with regard to the kernel and RootFS type, please refer to WindRiver Linux
+specification for details.
+
+
+3. Board Specific Patches
+=========================
+
+To get a list of patches applied to the kernel specific to this BSP
+along with patch descriptions use git whatchanged on the default
+kernel (git whatchanged <kernel_type>..<bsp_name>). For example:
+
+	# cd path_to_project/build/tmp/work-shared/nxp-ls1046/kernel-source
+	# git whatchanged standard/base..HEAD
+
+
+4. Boot Instructions
+====================
+
+It is necessary to load the DTB(device tree blob) into the target's memory
+prior to booting the kernel uImage. The DTB file can be found in the export
+directory after building a project or you can generate it manually with the
+following commands:
+
+	# cd path_to_project
+	# bitbake linux-windriver -c devshell
+
+Here is the kernel source directory, you can create, edit your own dts by the
+command of "vim arch/arm64/boot/dts/freescale/nxp-ls1046-xxx.dts".
+
+	# make freescale/nxp-ls1046-xxx.dtb
+
+Then the related DTB file can be found here:
+path_to_project/build/linux-windriver/linux-<board>-<kernel type>-build/arch/arm64/boot/dts/freescale/
+
+Assumption:
+
+All files can be downloaded by network, so deploy your board and host properly
+to make sure network is available from the board.
+
+4.1 NFS Root File System
+------------------------
+
+Example settings for the monitor (u-boot) are shown below:
+
+nfsboot=setenv bootargs root=/dev/nfs rw nfsroot=$serverip:$rootpath \
+ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:off \
+console=$consoledev,$baudrate $othbootargs;tftp $loadaddr $bootfile; \
+tftp $fdtaddr $fdtfile;bootm $loadaddr - $fdtaddr
+ethaddr=00:04:9F:02:00:FD
+eth1addr=00:04:9F:02:01:FD
+eth2addr=00:04:9F:02:02:FD
+loadaddr=0x83000000
+fdtaddr=0x8f000000
+gatewayip=192.168.1.1
+netmask=255.255.255.0
+ipaddr=192.168.1.100
+serverip=192.168.1.2
+netdev=eth0
+bootfile=uImage
+fdtfile=ls1046.dtb
+rootpath=/tftpboot/rootfs
+consoledev=ttyS0
+baudrate=115200
+othbootargs=earlycon=uart8250,mmio,0x21c0500
+
+4.2 NOR Flash Root File System
+------------------------------
+The LS1046ARDB provides two QSPI flash memories (part number: S25FS512SDSMFI011) 
+for storing images (RCW/UBoot/kernel/PPA/FMan microcode):
+ - Flash memory connected to chip select 0 (CS0): Represents the default virtual bank (bank 0)
+ - Flash memory connected to chip select 1 (CS1): Represents the alternative virtual bank (bank 4)
+Below descrption shows the memory addresses (memory map) for storing board configuration data on 
+virtual bank 0 and virtual bank 4.
+
+Virtual bank 0:
+Start address 	End address 	Image 						Maximum size
+0x0_4000_0000 	0x0_400F_FFFF 	RCW + PBI 					1 MB
+0x0_4010_0000 	0x0_401F_FFFF 	U-Boot image 					1 MB
+0x0_4020_0000 	0x0_402F_FFFF 	U-Boot environment 				1 MB
+0x0_4030_0000 	0x0_403F_FFFF 	Fman microcode 					1 MB
+0x0_4040_0000 	0x0_404F_FFFF 	Unified extensible firmware interface (UEFI) 	1 MB
+0x0_4050_0000 	0x0_406F_FFFF 	Primary Protected Application (PPA) 		2 MB
+0x0_4070_0000 	0x0_408F_FFFF 	Secure boot header + bootscript 		2 MB
+0x0_4090_0000 	0x0_40FF_FFFF 	Reserved 					7 MB
+0x0_4100_0000 	0x0_43FF_FFFF 	FIT image 					48 MB
+
+Virtual bank 4:
+Start address 	End address 	Image 						Maximum size
+0x0_4400_0000 	0x0_440F_FFFF 	RCW + PBI 					1 MB
+0x0_4410_0000 	0x0_441F_FFFF 	U-Boot image 					1 MB
+0x0_4420_0000 	0x0_442F_FFFF 	U-Boot environment 				1 MB
+0x0_4430_0000 	0x0_443F_FFFF 	Fman microcode 					1 MB
+0x0_4440_0000 	0x0_444F_FFFF 	UEFI 						1 MB
+0x0_4450_0000 	0x0_446F_FFFF 	PPA 						2 MB
+0x0_4470_0000 	0x0_448F_FFFF 	Secure boot header + bootscript 		2 MB
+0x0_4490_0000 	0x0_44FF_FFFF 	Reserved 					7 MB
+0x0_4500_0000 	0x0_47FF_FFFF 	FIT image 					48 MB
+
+4.3 NAND Flash Root File System
+-------------------------------
+
+4.3.1 Generate the boot image:
+------------------------------
+Configure your project with the following options to generate the jffs2 boot
+image and enable necessary kernel options:
+	--enable-kernel=standard+cfg/fs/flash_fs.scc --enable-bootimage=jffs2
+
+After having done, the kernel image and jffs2 rootfs image can be found in
+the export directory.
+
+Program the image into flash with following command:
+
+	# flash_eraseall /dev/mtd0
+	# flashcp -v wrlinux-image-glibc-std-nxp-ls1046-20170820023548.rootfs.jffs2 /dev/mtdx
+	# mkdir /mnt/jffs2
+	# mount -t jffs2 /dev/mtdblock0	/mnt/jffs2
+	# umount /mnt/jffs2
+
+Or for ubifs filesystems, configure your project with the following options to
+enable the necessary kernel options:
+	--enable-kernel=standard+cfg/fs/flash_fs.scc
+
+	# flash_eraseall  /dev/mtd0
+	# ubiattach /dev/ubi_ctrl -m x
+	# ubimkvol /dev/ubi0 -N root -s xxMiB
+	# mkdir /mnt/ubifs
+	# mount -t ubifs ubi0:root /mnt/ubifs
+	# tar xfj wrlinux-image-glibc-std-nxp-ls1046-20170824114330.rootfs.tar.bz2 --numeric-owner -C /mnt/ubifs/
+	# umount /mnt/ubifs/
+Using the real MTD partition size to set the UBI volume size when trigger the
+ubimkvol command, such as "-s 512MiB".
+
+The followings are for YAFFS2 filesystem:
+
+	# flash_eraseall  /dev/mtd0
+	# mkdir /mnt/yaffs2
+	# mount -t yaffs /dev/mtdblock0 /mnt/yaffs2
+	# tar xfj wrlinux-image-glibc-std-nxp-ls1046-20170824114330.rootfs.tar.bz2 --numeric-owner -C /mnt/yaffs2/
+	# umount /mnt/yaffs2/
+
+NOTE: Before writing to the flash memory you need to know its layout, you can
+get this kind information by running 'cat /proc/mtd' on your target.
+
+4.3.2 Deployment
+----------------
+
+After loading the kernel, pass kernel arguments as shown:
+
+	root=/dev/mtdblock0 rw rootfstype=jffs2 console=ttyS0,115200
+
+	or: ubi.mtd=0 root=ubi0:root rw rootfstype=ubifs console=ttyS0,115200
+
+	or: root=/dev/mtdblock0 rw rootfstype=yaffs console=ttyS0,115200
+
+4.4 Boot from SD card
+---------------------
+
+4.3.1 Deploy kernel, DTB image and rootfs into your SD card
+-----------------------------------------------------------
+
+Boot up the system with NFS deployment as described in section 4.1, run fdisk
+command to prepare a partition on the SD card, format it, and then put kernel
+image, DTB image and rootfs into this partition:
+
+	# mke2fs /dev/mmcblk0
+	# mkdir /mnt/sd
+	# mount /dev/mmcblk0 /mnt/sd
+	# tar wrlinux-image-glibc-std-nxp-ls1046-20170824114330.rootfs.tar.bz2 --numeric-owner -C /mnt/sd
+	# cp uImage /mnt/sd/boot
+	# cp ls1046.dtb /mnt/sd/boot
+	# umount /mnt/sd
+
+4.3.2 Set u-boot environment variables and boot from SD card
+------------------------------------------------------------
+
+Pass the kernel parameters as follows:
+	root=/dev/mmcblk0 rw console=ttyS0,115200 rootwait
+
+Then run the following command to load the kernel image and DTB image:
+	=> mmc rescan
+	=> ext2load mmc 0:0 $loadaddr /boot/uImage
+	=> ext2load mmc 0:0 $fdtaddr /boot/ls1046.dtb
+	=> bootm $loadaddr - $fdtaddr
+
+4.4 Creating Partitioned Images(WIC)
+------------------------------------
+User can use the OpenEmbedded Image Creator, wic, to create the properly
+partitioned image on a SD card. The wic command
+generates partitioned images from existing OpenEmbedded build artifacts.
+User can refer to the below URL to get more WIC details:
+
+http://www.yoctoproject.org/docs/2.2/mega-manual/mega-manual.html#creating-partitioned-images
+
+This BSP supports disk images for SD card.
+After build the project, user will get a WIC image under the directory
+tmp/deploy/images/<bsp name>/ ,such as:
+
+tmp/deploy/images/nxp-ls1046/wrlinux-image-glibc-std-nxp-ls1046.wic
+
+Then user can write the output image to a SD card:
+
+Since this BSP doesn't have a firmware to read the uboot from a partition table,
+WIC image only contains kernel, dtb and rootfs. We still need to write U-boot
+image to SD card directly by "dd" command.
+
+4.4.1 Burn images to SD card
+--------------------------
+
+To burn uboot and WIC images to SD card, user need to execute two steps:
+
+1) Burn WIC image
+
+# dd if=wrlinux-image-glibc-std-nxp-ls1046.wic of=/dev/your_sd_dev
+
+2) Burn uboot.bin to SD card, user can find u-boot-sdcard-2016.09+fslgit-r0.bin under BSP's
+   sublayer "bootloader" and refer to bootloader/README for more details:
+
+# dd if=u-boot-sdcard-2016.09+fslgit-r0.bin of=/dev/your_sd_dev bs=512 seek=8 conv=fsync
+
+3) Burn fman ucode to SD card, user can find fsl_fman_ucode_ls1046_r1.0_106_4_18.bin under BSP's
+   sublayer "bootloader" and refer to bootloader/README for more details:
+
+# dd if=fsl_fman_ucode_ls1046_r1.0_106_4_18.bin of=/dev/your_sd_dev bs=512 seek=2080 conv=fsync
+
+4.4.2 Set uboot env
+-----------------
+
+Board can boot automatically by set the below uboot environment variables:
+
+=> setenv bootfile uImage; setenv fdtfile fsl-ls1046a-rdb.dtb;  setenv loadaddr 0x80080000; setenv fdtaddr 0x88000000;
+
+=> setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p1 rw no_console_suspend earlycon=uart8250,mmio,0x21c0500 ip=dhcp
+
+=> setenv bootcmd 'ext2load mmc 0:1 $loadaddr /boot/$bootfile; ext2load mmc 0:1 $fdtaddr /boot/$fdtfile; bootm $loadaddr - $fdtaddr'
+
+=> saveenv; run bootcmd;
+
+Note:
+Set sw5-7 as off status.
+
+5. Features
+===========
+
+5.1 IEEE 1588 PTP testing
+-------------------------
+
+5.1.1 Introduction
+------------------
+
+This testing method is based on PTPd project, only some basic testing commands
+have been tested on this BSP because the accurate PTP testing scenario is a bit
+complicated according to IEEE PTPv2.
+
+5.1.2 Usage and verification
+----------------------------
+
+Two boards are necessary for this case, one for master, another is slave,
+the following commands show to use PTP time as stamping mode based on the
+peer delay (P2P) mechanism:
+
+     master :
+     root@nxp-ls1046:~# ptpd2 -i eth2 -MV
+     02:36:18.339405 ptpd2[634].startup (info)      (___) Configuration OK
+     02:36:18.340935 ptpd2[634].startup (info)      (___) Successfully acquired lock on /var/run/ptpd2.lock
+     02:36:18.341410 ptpd2[634].startup (notice)    (___) PTPDv2 started successfully on eth2 using "masteronly" preset (PID 634)
+     02:36:18.341506 ptpd2[634].startup (info)      (___) TimingService.PTP0: PTP service init
+     02:36:18.343434, init,
+     02:36:18.448931 ptpd2[634].eth2 (notice)    (lstn_init) Now in state: PTP_LISTENING
+     02:36:18.449046, lstn_init,  1
+     02:36:28.341629 ptpd2[634].eth2 (notice)    (lstn_init) TimingService.PTP0: elected best TimingService
+     02:36:28.341749 ptpd2[634].eth2 (info)      (lstn_init) TimingService.PTP0: acquired clock control
+     02:36:30.452226 ptpd2[634].eth2 (notice)    (mst) Now in state: PTP_MASTER, Best master: 00049ffffe03cbc9(unknown)/1 (self)
+     #Timestamp, State, Clock ID, One Way Delay, Offset From Master, Slave to Master, Master to Slave, Observed Drift, Last packet Received, One Way Delay Mean, One Way Delay Std Dev, Offset From Master Mean, Offset From Master Std Dev, Observed Drift Mean, Observed Drift Std Dev, raw delayMS, raw delaySM
+
+     slave:
+     root@nxp-ls1046:~# ptpd2 -i eth3 -sV
+     02:39:54.066864 ptpd2[564].startup (info)      (___) Configuration OK
+     02:39:54.067923 ptpd2[564].startup (warning)   (___) Interface eth6 seems to be down. PTPd will not operate correctly until it's up.
+     02:39:54.068092 ptpd2[564].startup (info)      (___) Successfully acquired lock on /var/run/ptpd2.lock
+     02:39:54.068523 ptpd2[564].startup (notice)    (___) PTPDv2 started successfully on eth6 using "slaveonly" preset (PID 564)
+     02:39:54.068596 ptpd2[564].startup (info)      (___) TimingService.PTP0: PTP service init
+     02:39:54.068711, init,
+     02:39:54.069636 ptpd2[564].eth6 (warning)   (init) Interface eth6 seems to be down. PTPd will not operate correctly until it's up.
+     02:39:54.070643 ptpd2[564].eth6 (info)      (init) Observed_drift loaded from kernel: 0 ppb
+     02:39:54.170948 ptpd2[564].eth6 (notice)    (lstn_init) Now in state: PTP_LISTENING
+     02:39:54.171025, lstn_init,  1
+     02:40:04.068702 ptpd2[564].eth6 (notice)    (lstn_init) TimingService.PTP0: elected best TimingService
+     02:40:04.068818 ptpd2[564].eth6 (info)      (lstn_init) TimingService.PTP0: acquired clock control
+
+5.2. Multilib
+-------------
+
+By default, this BSP is configured as a 64-bit kernel and 64-bit userspace
+with 32-bit userspace multilib support.
+
+Multilib is also supported by this BSP.
+
+1. To add 32-bit multilib support for an existing project, use:
+
+    bitbake lib32-wrlinux-image-glibc-std
+
+2. To add 32-bit mulilib support for a specific package, use:
+
+    bitbake lib32-<pkg-name>
+
+5.3. CPU hotplug
+----------------
+
+Currently, this feature has been disabled from software settings and runtime dtb
+in the latest u-boot(2016.012.0+ga9b437f), which was enabled in the previous.
+
+5.4 kexec/kdump
+---------------
+
+To build the boot or capture kernel, use the following option with the configure
+command for your project:
+
+     --template=feature/kexec,feature/kdump
+
+5.4.1 kexec
+-----------
+For capture kernel:
+Before boot capture kernel, please add "maxcpus=1" to the boot parameter.
+
+5.4.2 kdump
+-----------
+For boot kernel:
+To reserve a memory region for the capture kernel, pass "crashkernel=256M@2304M"
+via the command line.
+
+For capture kernel:
+Please use "Image" as boot capture kernel which can be found in the path
+build/tmp/deploy/images/nxp-ls1046. Before boot capture kernel, please add
+"maxcpus=1" to the boot parameter.

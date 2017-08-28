@@ -1,0 +1,120 @@
+		Freescale LS1046A-RDB Board Support Package
+
+
+Table of Contents
+=================
+
+1. Supported Boards
+2. Change History
+3. BSP Features
+4. BSP Notes
+
+
+1. Supported Boards
+===================
+
+This BSP supports the following boards:
+
+  + Freescale LS1046A-RDB: SCH-29142 REV B2
+
+2. Change History
+=================
+
+  - 2017/10 (US99447): Wind River Linux 9.0 RCPL11, add support for LS1046A
+		       LS1046A-RDB board based on QorIQ-SDK-2.0-1703.
+
+3. BSP Features
+===============
+
+3.1 Supported Features
+----------------------
+
+The following BSP features are validated and supported on boards where
+the corresponding h/w features exist.
+
+  o General Platform
+        + perf: H/W based PMU
+
+  o Bus
+        + PCI-Express: 2 slots
+        + Mini-Pcie: 1 slot
+        + I2C: Two I2C controllers
+        + QSPI: Support two 64 MB onboard QSPI NOR flash memories
+        + SDHC: connect with SD card or eMMC
+
+  o Network
+        + 10G Copper Ethernet: connect with AQR106 10G PHY
+        + 10G SFP+: connect with Finisar FTLX8571D3BCL SFP+ module
+        + 10/100/1000M Ethernet: RGMII, 2 ports, connect with RTL8211FS PHY
+        + 10/100/1000M Ethernet: SGMII, 2 ports, connect with RTL8211FS PHY
+        + IEEE-1588
+
+  o USB
+        + Two USB 3.0 controllers with integrated PHYs
+                    + One USB 3.0 port is connected to a Type A host connector
+                    + One USB 3.0 port is configured as On-The-Go (OTG) with a Micro-AB connector
+                    + One USB 3.0 is connected to miniPCIe connector
+
+  o Storage
+        + SATA 3.0
+        + eMMC
+        + SD card
+        + Qspi flash
+        + Nand flash
+
+  o Misc Devices
+        + Serial Ports: DUART, 2 UARTs with hardware flow control
+        + IFC 2.0: connect with CPLD and Nand flash
+        + GPIO
+        + RTC
+        + Temperature sensor
+        + HW Watchdog
+
+  o Power Management
+       + Suspend/Resume
+       + CPU Idle
+       + CPU Freq
+
+3 Unsupported Features
+===================
+
+4. BSP Notes
+============
+
+4.1 Validated Board Info
+------------------------
+
+This BSP is only validated in following environment. If you use this BSP
+in a different environment it may possibly have some issues.
+
+LS1046A rev1.0:
+	Processor:              LS1046AE Rev1.0 (0x87070010)
+	Board Revision:	        REV B2, CPLD: V2.3, PCBA: V2.0
+	BootLoader:             U-Boot
+	BootLoader Version:     U-Boot 2016.092.0+ga06b209 (Mar 30 2017 - 01:18:16 +0800)
+	RCW:                    u-boot-qspi-2016.09+fslgit-r0.bin
+	FMAN Firmware:          Fman1: Uploading microcode version 106.4.18
+	PPA Firmware:           Version 0.2
+
+Note: to use the WRLinux RCPL11 or later version, the bootloader & RCW & firmware
+versions indicated above must be installed.
+
+4.2 USDPAA
+----------
+
+To use USDPAA apps, configure your project by appending the follwoing:
+
+  --with-layer=wr-freescale_qoriq_dpaa
+
+Please refer to the related docs from NXP for more information, like QorIQ
+LS1046A DPAA Reference Manual, in section 10.7 USDPAA Applications.
+
+Note:
+
+According to the vendor confirmation, currently USDPAA is only supported by
+arm64.
+
+Because no ethernet is reserved for USDPAA kernel by default, please use the
+PCI-Express NIC when using USDPAA. For example, if you use the E1000e Ethernet,
+you should enable the following kernel option:
+        CONFIG_E1000E=y
