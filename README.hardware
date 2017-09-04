@@ -104,7 +104,7 @@ versions indicated above must be installed.
 
 To use USDPAA apps, configure your project by appending the follwoing:
 
-  --with-layer=wr-freescale_qoriq_dpaa
+  --layers=wr-nxp-qoriq-dpaa --templates=feature/usdpaa --dl-layers
 
 Please refer to the related docs from NXP for more information, like QorIQ
 LS1046A DPAA Reference Manual, in section 10.7 USDPAA Applications.
