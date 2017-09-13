@@ -118,3 +118,19 @@ Because no ethernet is reserved for USDPAA kernel by default, please use the
 PCI-Express NIC when using USDPAA. For example, if you use the E1000e Ethernet,
 you should enable the following kernel option:
         CONFIG_E1000E=y
+4.3 DPDK
+--------
+
+To develop application base on DPDK, configure your project by appending the follwoing:
+
+  --layers=wr-nxp-qoriq-networking --templates=feature/nxp-dpdk --dl-layers
+
+Please refer to the related docs from NXP for more information, like QQorIQ-SDK-2.0-IC-Rev0.pdf,
+in section 9.2 DPDK User Manual.
+
+Note:
+
+Because no ethernet is reserved for DPDK kernel by default, please use the
+PCI-Express NIC when using DPDK. For example, if you use the E1000e Ethernet,
+you should enable the following kernel option:
+        CONFIG_E1000E=y
