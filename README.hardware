@@ -20,7 +20,7 @@ This BSP supports the following boards:
 2. Change History
 =================
 
-  - 2017/10 (US99447): Wind River Linux 9.0 RCPL11, add support for LS1046A
+  - 2017/10 (US99447): Wind River Linux 9.0 RCPL12, add support for LS1046A
 		       LS1046A-RDB board based on QorIQ-SDK-2.0-1703.
 
 3. BSP Features
@@ -96,13 +96,13 @@ LS1046A rev1.0:
 	FMAN Firmware:          Fman1: Uploading microcode version 106.4.18
 	PPA Firmware:           Version 0.2
 
-Note: to use the WRLinux RCPL11 or later version, the bootloader & RCW & firmware
+Note: to use the WRLinux RCPL12 or later version, the bootloader & RCW & firmware
 versions indicated above must be installed.
 
 4.2 USDPAA
 ----------
 
-To use USDPAA apps, configure your project by appending the follwoing:
+To use USDPAA apps, configure your project by appending the following:
 
   --layers=wr-nxp-qoriq-dpaa --templates=feature/usdpaa --dl-layers
 
@@ -121,7 +121,7 @@ you should enable the following kernel option:
 4.3 DPDK
 --------
 
-To develop application base on DPDK, configure your project by appending the follwoing:
+To develop application base on DPDK, configure your project by appending the following:
 
   --layers=wr-nxp-qoriq-networking --templates=feature/nxp-dpdk --dl-layers
 

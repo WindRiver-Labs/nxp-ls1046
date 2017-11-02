@@ -129,7 +129,7 @@ The LS1046ARDB provides two QSPI flash memories (part number: S25FS512SDSMFI011)
 for storing images (RCW/UBoot/kernel/PPA/FMan microcode):
  - Flash memory connected to chip select 0 (CS0): Represents the default virtual bank (bank 0)
  - Flash memory connected to chip select 1 (CS1): Represents the alternative virtual bank (bank 4)
-Below descrption shows the memory addresses (memory map) for storing board configuration data on 
+Below description shows the memory addresses (memory map) for storing board configuration data on 
 virtual bank 0 and virtual bank 4.
 
 Virtual bank 0:
