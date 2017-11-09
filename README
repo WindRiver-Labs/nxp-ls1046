@@ -375,7 +375,7 @@ in the latest u-boot(2016.012.0+ga9b437f), which was enabled in the previous.
 To build the boot or capture kernel, use the following option with the configure
 command for your project:
 
-     --template=feature/kexec,feature/kdump
+     --templates feature/kexec feature/kdump
 
 5.4.1 kexec
 -----------
