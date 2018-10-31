@@ -3,5 +3,6 @@
 # The first partition is NULL, reserved for uboot.
 # The second partition is to accommodate kernel, dtb and rootfs.
 
-part / --ondisk mmcblk --no-table --size 4M
-part / --source rootfs --ondisk mmcblk --fstype=ext4 --label root --align 4
+part u-boot --source rawcopy --sourceparams="file=u-boot.bin-sdcard" --ondisk mmcblk --no-table --align 4 --fixed-size 10M
+#TODO:fman-ucode stores @ 9M
+part / --source rootfs --ondisk mmcblk --fstype=ext4 --label root --align 1024
