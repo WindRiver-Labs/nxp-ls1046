@@ -1,7 +1,7 @@
-IMAGE_INSTALL += "alsa-utils"
-IMAGE_INSTALL += "lm-sensors"
-IMAGE_INSTALL += "i2c-tools"
-IMAGE_INSTALL += "pm-utils"
-IMAGE_INSTALL += "oprofile"
-IMAGE_INSTALL += "u-boot-qoriq"
-IMAGE_INSTALL += "perf"
+IMAGE_INSTALL += "u-boot-uenv"
+
+PNWHITELIST_freescale-layer += 'u-boot-qoriq'
+PNWHITELIST_freescale-layer += 'change-file-endianess'
+PNWHITELIST_freescale-layer += 'rcw'
+
+PNWHITELIST += 'u-boot-uenv'

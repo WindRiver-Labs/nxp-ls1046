@@ -20,8 +20,8 @@ This BSP supports the following boards:
 2. Change History
 =================
 
-  - 2017/10 (US99447): Wind River Linux 9.0 RCPL12, add support for LS1046A
-		       LS1046A-RDB board based on QorIQ-SDK-2.0-1703.
+  - 2018/12 (US119362): Wind River Linux 10.17.41 RCPL14. Standard and preempt-rt
+                       support for LS1046A LS1046A-RDB board based on NXP LSDK1712.
 
 3. BSP Features
 ===============

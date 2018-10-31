@@ -27,7 +27,7 @@ is done automatically when using the Wind River configure wrapper.
 
 License
 -------
-Copyright (C) 2017 Wind River Systems, Inc.
+Copyright (C) 2018 Wind River Systems, Inc.
 
 The right to copy, distribute or otherwise make use of this software may
 be licensed only pursuant to the terms of an applicable Wind River license
@@ -38,29 +38,20 @@ Source code included in tree for individual recipes is under the LICENSE
 stated in each recipe (.bb file) unless other stated.
 
 
-2. BSP Kernel and RootFS Combination
-====================================
+2. BSP Kernel and Distros
+=========================
 
-The validity of WindRiver Linux kernel and RootFS combination for this BSP is
-in the table.
-The leftmost column of the table is the kernel type, and the top line is the
-RootFS type.
-'Y' in each content cell stands for the combination is supported; 'N' stands
-for not supported:
+The following table summarizes the valid Wind River Linux distros for this BSP.
+'Y' in each content cell stands for supported; 'N' stands for not supported:
 
---------------------------------------------------------------------
-| kernel/rootfs | glibc_std | glibc_small | glibc_cgl | glibc_tiny |
---------------------------------------------------------------------
-|   standard    |     Y     |      Y      |     N     |     N      |
---------------------------------------------------------------------
-|   preempt_rt  |     Y     |      Y      |     N     |     N      |
---------------------------------------------------------------------
-|   cgl         |     N     |      N      |     y     |     N      |
---------------------------------------------------------------------
+  +--------------+-------------+-------------+-------------+
+  | valid/distro |   wrlinux   | wrlinux-cgl | wrlinux-ovp |
+  +--------------+-------------+-------------+-------------+
+  |    valid     |      Y      |      Y      |      N      |
+  +--------------+-------------+-------------+-------------+
 
-Note: with regard to the kernel and RootFS type, please refer to WindRiver Linux
-specification for details.
-
+For the supported kernel type for this BSP, please check the TARGET_SUPPORTED_KTYPES
+by running 'bitbake -e | grep "^TARGET_SUPPORTED_KTYPES"'.
 
 3. Board Specific Patches
 =========================
@@ -69,7 +60,7 @@ To get a list of patches applied to the kernel specific to this BSP
 along with patch descriptions use git whatchanged on the default
 kernel (git whatchanged <kernel_type>..<bsp_name>). For example:
 
-	# cd path_to_project/build/tmp/work-shared/nxp-ls1046/kernel-source
+	# cd tmp-glibc/work-shared/<bsp_name>/kernel-source
 	# git whatchanged standard/base..HEAD
 
 
@@ -77,7 +68,7 @@ kernel (git whatchanged <kernel_type>..<bsp_name>). For example:
 ====================
 
 It is necessary to load the DTB(device tree blob) into the target's memory
-prior to booting the kernel uImage. The DTB file can be found in the export
+prior to booting the kernel Image. The DTB file can be found in the export
 directory after building a project or you can generate it manually with the
 following commands:
 
@@ -116,7 +107,7 @@ netmask=255.255.255.0
 ipaddr=192.168.1.100
 serverip=192.168.1.2
 netdev=eth0
-bootfile=uImage
+bootfile=Image
 fdtfile=ls1046.dtb
 rootpath=/tftpboot/rootfs
 consoledev=ttyS0
@@ -222,11 +213,11 @@ Boot up the system with NFS deployment as described in section 4.1, run fdisk
 command to prepare a partition on the SD card, format it, and then put kernel
 image, DTB image and rootfs into this partition:
 
-	# mke2fs /dev/mmcblk0
+	# mke2fs /dev/mmcblk0p1
 	# mkdir /mnt/sd
-	# mount /dev/mmcblk0 /mnt/sd
+	# mount /dev/mmcblk0p1 /mnt/sd
 	# tar wrlinux-image-glibc-std-nxp-ls1046-20170824114330.rootfs.tar.bz2 --numeric-owner -C /mnt/sd
-	# cp uImage /mnt/sd/boot
+	# cp Image /mnt/sd/boot
 	# cp ls1046.dtb /mnt/sd/boot
 	# umount /mnt/sd
 
@@ -234,13 +225,13 @@ image, DTB image and rootfs into this partition:
 ------------------------------------------------------------
 
 Pass the kernel parameters as follows:
-	root=/dev/mmcblk0 rw console=ttyS0,115200 rootwait
+	root=/dev/mmcblk0p1 rw console=ttyS0,115200 rootwait
 
 Then run the following command to load the kernel image and DTB image:
 	=> mmc rescan
-	=> ext2load mmc 0:0 $loadaddr /boot/uImage
+	=> ext2load mmc 0:0 $loadaddr /boot/Image
 	=> ext2load mmc 0:0 $fdtaddr /boot/ls1046.dtb
-	=> bootm $loadaddr - $fdtaddr
+	=> booti $loadaddr - $fdtaddr
 
 4.4 Creating Partitioned Images(WIC)
 ------------------------------------
@@ -259,8 +250,7 @@ tmp/deploy/images/nxp-ls1046/wrlinux-image-glibc-std-nxp-ls1046.wic
 
 Then user can write the output image to a SD card:
 
-Since this BSP doesn't have a firmware to read the uboot from a partition table,
-WIC image only contains kernel, dtb and rootfs. We still need to write U-boot
+WIC image contains kernel, dtb, rootfs and u-boot. We still need to write fman microcode
 image to SD card directly by "dd" command.
 
 4.4.1 Burn images to SD card
@@ -272,31 +262,15 @@ To burn uboot and WIC images to SD card, user need to execute two steps:
 
 # dd if=wrlinux-image-glibc-std-nxp-ls1046.wic of=/dev/your_sd_dev
 
-2) Burn uboot.bin to SD card, user can find u-boot-sdcard-2016.09+fslgit-r0.bin under BSP's
-   sublayer "bootloader" and refer to bootloader/README for more details:
+2) User can find fsl_fman_ucode_ls1046_r1.0_106_4_18.bin
+from git://github.com/qoriq-open-source/fm-ucode.git, then burn it with:
 
-# dd if=u-boot-sdcard-2016.09+fslgit-r0.bin of=/dev/your_sd_dev bs=512 seek=8 conv=fsync
+# dd if=fsl_fman_ucode_ls1046_r1.0_106_4_18.bin of=/dev/your_sd_dev bs=512 seek=18432 conv=fsync
 
-3) Burn fman ucode to SD card, user can find fsl_fman_ucode_ls1046_r1.0_106_4_18.bin under BSP's
-   sublayer "bootloader" and refer to bootloader/README for more details:
+4.4.2 Set board switch
+----------------------
 
-# dd if=fsl_fman_ucode_ls1046_r1.0_106_4_18.bin of=/dev/your_sd_dev bs=512 seek=2080 conv=fsync
-
-4.4.2 Set uboot env
------------------
-
-Board can boot automatically by set the below uboot environment variables:
-
-=> setenv bootfile uImage; setenv fdtfile fsl-ls1046a-rdb.dtb;  setenv loadaddr 0x80080000; setenv fdtaddr 0x88000000;
-
-=> setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p1 rw no_console_suspend earlycon=uart8250,mmio,0x21c0500 ip=dhcp
-
-=> setenv bootcmd 'ext2load mmc 0:1 $loadaddr /boot/$bootfile; ext2load mmc 0:1 $fdtaddr /boot/$fdtfile; bootm $loadaddr - $fdtaddr'
-
-=> saveenv; run bootcmd;
-
-Note:
-Set sw5-7 as off status.
+Board can boot from SD card by setting sw5[1:8] as '00100000'.
 
 5. Features
 ===========
