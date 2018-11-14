@@ -19,7 +19,7 @@ do_image_wic[depends] += "mtools-native:do_populate_sysroot dosfstools-native:do
 MULTILIBS ?= "multilib:lib32"
 DEFAULTTUNE_virtclass-multilib-lib32 ?= "armv7athf-neon"
 
-EXTRA_IMAGEDEPENDS = "u-boot-qoriq u-boot-uenv"
+EXTRA_IMAGEDEPENDS = "u-boot-qoriq u-boot-uenv ppa"
 UBOOT_CONFIG ??= "emmc sdcard qspi"
 UBOOT_CONFIG[emmc] = "ls1046ardb_emmc_defconfig,,u-boot-with-spl-pbl.bin"
 UBOOT_CONFIG[sdcard] = "ls1046ardb_sdcard_config,,u-boot-with-spl-pbl.bin"
