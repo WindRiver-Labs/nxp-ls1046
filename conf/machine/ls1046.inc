@@ -27,3 +27,6 @@ UBOOT_CONFIG[qspi] = "ls1046ardb_qspi_config,,u-boot-dtb.bin"
 
 # it's used by many recipes in meta-freescale
 MACHINE_SOCARCH = "${TUNE_PKGARCH}"
+
+DPDK_TARGET_MACHINE ?= "dpaa"
+PREFERRED_VERSION_dpdk = "17.11.1"
