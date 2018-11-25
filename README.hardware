@@ -91,46 +91,7 @@ LS1046A rev1.0:
 	Processor:              LS1046AE Rev1.0 (0x87070010)
 	Board Revision:	        REV B2, CPLD: V2.3, PCBA: V2.0
 	BootLoader:             U-Boot
-	BootLoader Version:     U-Boot 2016.092.0+ga06b209 (Mar 30 2017 - 01:18:16 +0800)
-	RCW:                    u-boot-qspi-2016.09+fslgit-r0.bin
-	FMAN Firmware:          Fman1: Uploading microcode version 106.4.18
-	PPA Firmware:           Version 0.2
+	BootLoader Version:     U-Boot 2017.07+fsl+gc249f5f072
+	FMAN Firmware:          106.4.18
+	PPA Firmware:           LSDK-17.09-update-103017-dirty
 
-Note: to use the WRLinux RCPL12 or later version, the bootloader & RCW & firmware
-versions indicated above must be installed.
-
-4.2 USDPAA
-----------
-
-To use USDPAA apps, configure your project by appending the following:
-
-  --layers=wr-nxp-qoriq-dpaa --templates=feature/usdpaa --dl-layers
-
-Please refer to the related docs from NXP for more information, like QorIQ
-LS1046A DPAA Reference Manual, in section 10.7 USDPAA Applications.
-
-Note:
-
-According to the vendor confirmation, currently USDPAA is only supported by
-arm64.
-
-Because no ethernet is reserved for USDPAA kernel by default, please use the
-PCI-Express NIC when using USDPAA. For example, if you use the E1000e Ethernet,
-you should enable the following kernel option:
-        CONFIG_E1000E=y
-4.3 DPDK
---------
-
-To develop application base on DPDK, configure your project by appending the following:
-
-  --layers=wr-nxp-qoriq-networking --templates=feature/nxp-dpdk --dl-layers
-
-Please refer to the related docs from NXP for more information, like QQorIQ-SDK-2.0-IC-Rev0.pdf,
-in section 9.2 DPDK User Manual.
-
-Note:
-
-Because no ethernet is reserved for DPDK kernel by default, please use the
-PCI-Express NIC when using DPDK. For example, if you use the E1000e Ethernet,
-you should enable the following kernel option:
-        CONFIG_E1000E=y

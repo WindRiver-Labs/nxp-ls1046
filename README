@@ -37,7 +37,6 @@ herein. All rights not licensed by Wind River are reserved by Wind River.
 Source code included in tree for individual recipes is under the LICENSE
 stated in each recipe (.bb file) unless other stated.
 
-
 2. BSP Kernel and Distros
 =========================
 
@@ -63,30 +62,39 @@ kernel (git whatchanged <kernel_type>..<bsp_name>). For example:
 	# cd tmp-glibc/work-shared/<bsp_name>/kernel-source
 	# git whatchanged standard/base..HEAD
 
-
 4. Boot Instructions
 ====================
 
-It is necessary to load the DTB(device tree blob) into the target's memory
-prior to booting the kernel Image. The DTB file can be found in the export
-directory after building a project or you can generate it manually with the
-following commands:
+The typical u-boot settings apply to these boards. You will need to use
+setenv, printenv and saveenv, to configure, display and store respectively
+your network configuration details and kernel command line. In order to
+TFTP a kernel, you need at a minimum to set the following:
 
-	# cd path_to_project
-	# bitbake linux-windriver -c devshell
+	- ipaddr
+	- gatewayip
+	- netmask
+	- serverip
+	- loadaddr
+	- dtbfile
+	- dtbaddr
+	- ethaddr
+	- eth1addr
 
-Here is the kernel source directory, you can create, edit your own dts by the
-command of "vim arch/arm64/boot/dts/freescale/nxp-ls1046-xxx.dts".
+Target specifics are usually set in the "bootargs" variable, and the
+kernel image is set in the "kernelfile" variable. Don't forget that if you
+want these values to be available after a power cycle you will need to run
+the saveenv command.
 
-	# make freescale/nxp-ls1046-xxx.dtb
+Typically convenience macros exist that will create a complete bootargs
+command line for the kernel based on variables that contain individual
+settings.  Since these macros exist as env variables themselves, they
+may or may not be present depending on who installed and configured
+u-boot for the board.
 
-Then the related DTB file can be found here:
-path_to_project/build/linux-windriver/linux-<board>-<kernel type>-build/arch/arm64/boot/dts/freescale/
-
-Assumption:
-
-All files can be downloaded by network, so deploy your board and host properly
-to make sure network is available from the board.
+The console device for the board is ttyS0 at 115200 baud. For the DTB
+address, 0x90000000 was used with success by Wind River. The load address
+must be high enough to not interfere with kernel decompression. A value
+of 0x81000000 was used with success for all kernels tested by Wind River.
 
 4.1 NFS Root File System
 ------------------------
@@ -95,27 +103,29 @@ Example settings for the monitor (u-boot) are shown below:
 
 nfsboot=setenv bootargs root=/dev/nfs rw nfsroot=$serverip:$rootpath \
 ip=$ipaddr:$serverip:$gatewayip:$netmask:$hostname:$netdev:off \
-console=$consoledev,$baudrate $othbootargs;tftp $loadaddr $bootfile; \
-tftp $fdtaddr $fdtfile;bootm $loadaddr - $fdtaddr
+console=$consoledev,$baudrate $othbootargs;tftp $kernel_addr_r $kernelfile; \
+tftp $fdt_addr_r $fdtfile;booti $kernel_addr_r - $fdt_addr_r
 ethaddr=00:04:9F:02:00:FD
 eth1addr=00:04:9F:02:01:FD
 eth2addr=00:04:9F:02:02:FD
-loadaddr=0x83000000
-fdtaddr=0x8f000000
+kernel_addr_r=0x81000000
+fdt_addr_r=0x90000000
 gatewayip=192.168.1.1
 netmask=255.255.255.0
 ipaddr=192.168.1.100
 serverip=192.168.1.2
 netdev=eth0
-bootfile=Image
-fdtfile=ls1046.dtb
+kernelfile=Image
+fdtfile=devicetree-Image-fsl-ls1046a-rdb-sdk.dtb
 rootpath=/tftpboot/rootfs
 consoledev=ttyS0
 baudrate=115200
 othbootargs=earlycon=uart8250,mmio,0x21c0500
 
-4.2 NOR Flash Root File System
-------------------------------
+4.2 Booting from SPI flash
+--------------------------
+4.2.1 On-Board SPI Flash vbank Configuration
+------------------------------------------
 The LS1046ARDB provides two QSPI flash memories (part number: S25FS512SDSMFI011) 
 for storing images (RCW/UBoot/kernel/PPA/FMan microcode):
  - Flash memory connected to chip select 0 (CS0): Represents the default virtual bank (bank 0)
@@ -147,46 +157,106 @@ Start address 	End address 	Image 						Maximum size
 0x0_4490_0000 	0x0_44FF_FFFF 	Reserved 					7 MB
 0x0_4500_0000 	0x0_47FF_FFFF 	FIT image 					48 MB
 
+4.2.2 Programming a new bootloader
+----------------------------------
+
+By default, an existing U-Boot is run in bank 0 after the system is powered on or
+after a hard reset is performed. To flash U-Boot to the alternate bank, first
+switch to bank 0 by performing a hard reset or by typing reset. Then use the
+following commands to flash a new U-Boot into the alternate bank and then switch
+to that alternate bank where the new U-Boot is flashed:
+
+=>tftp 82000000 u-boot.bin-qspi
+=>sf probe 0:1
+=>sf erase 100000 +$filesize
+=>sf write 82000000 100000 $filesize
+=>cpld reset altbank
+
+In the LS1046ARDB, you can program a new RCW to the QSPI flash memory.
+To program a new RCW, first switch to QSPI bank 0 by either performing
+a hard reset or typing reset. Next, load the new RCW to RAM by downloading
+it via TFTP and then copying it to flash offset 0x0, which is the offset
+address of RCW in the QSPI flash memory. Then, run the following commands
+at the U-Boot prompt to program the RCW to the QSPI flash memory and reset
+to the alternate bank:
+
+=>tftp 82000000 <rcw_file_name>.bin
+=>sf probe 0:1
+=>sf erase 0 +$filesize
+=>sf write 82000000 0 $filesize;
+=>cpld reset altbank
+
+To program a new microcode, first switch to QSPI bank 0 by either performing
+a hard reset or typing cpld reset. Next, load the new microcode to RAM by
+downloading it via TFTP and then writing it to flash offset 0x300000, which
+is the offset of microcode in the QSPI flash memory. Then, run the following
+commands at the U-Boot prompt to program the microcode to the boot device:
+=>tftp 83000000 <ucode_file_name>.bin
+=>sf probe 0:1
+=>sf erase 300000 +$filesize
+=>sf write 83000000 300000 $filesize
+=>cpld reset altbank
+
+To program a PPA firmware, first switch to QSPI bank 0 by either performing
+a hard reset or typing cpld reset. Next, load the new microcode to RAM by
+downloading it via TFTP and then writing it to flash offset 0x300000, which
+is the offset of firmware in the QSPI flash memory. Then, run the following
+commands at the U-Boot prompt to program the microcode to the boot device:
+=>tftp 83000000 ppa.itb
+=>sf probe 0:1
+=>sf erase 500000 +$filesize
+=>sf write 83000000 500000 $filesize
+=>cpld reset altbank
+
+NOTE:
+1. You can use the sf probe 0:0 to program the microcode to the current bank.
+2. uboot can be build with:
+$ bitbake u-boot-qoriq
+After build, the binary can be found at:
+tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb/u-boot.bin-qspi
+3. rcw can be build with:
+$ bitbake rcw
+After build, the binary can be found at:
+tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb/rcw
+4. ppa firmware can be build with:
+$ bitbake ppa
+After build, the binary can be found at:
+tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb/ppa.itb
+5.fman ucode can be download from:
+from git://github.com/qoriq-open-source/fm-ucode.git
+
+4.2.3 Set board switch
+----------------------
+
+Board can boot from SPI flash by setting sw5[1:8] as '00100100'.
+
+
 4.3 NAND Flash Root File System
 -------------------------------
-
 4.3.1 Generate the boot image:
 ------------------------------
-Configure your project with the following options to generate the jffs2 boot
-image and enable necessary kernel options:
-	--enable-kernel=standard+cfg/fs/flash_fs.scc --enable-bootimage=jffs2
+Configure your project with the following options to enable necessary kernel
+options:
+        --templates feature/yaffs2-utils
 
-After having done, the kernel image and jffs2 rootfs image can be found in
-the export directory.
-
-Program the image into flash with following command:
-
-	# flash_eraseall /dev/mtd0
-	# flashcp -v wrlinux-image-glibc-std-nxp-ls1046-20170820023548.rootfs.jffs2 /dev/mtdx
-	# mkdir /mnt/jffs2
-	# mount -t jffs2 /dev/mtdblock0	/mnt/jffs2
-	# umount /mnt/jffs2
-
-Or for ubifs filesystems, configure your project with the following options to
-enable the necessary kernel options:
-	--enable-kernel=standard+cfg/fs/flash_fs.scc
-
-	# flash_eraseall  /dev/mtd0
+After build, program the image into flash with following command:
+For ubifs filesystems:
+	# flash_erase /dev/mtd0 0 0
 	# ubiattach /dev/ubi_ctrl -m x
 	# ubimkvol /dev/ubi0 -N root -s xxMiB
 	# mkdir /mnt/ubifs
 	# mount -t ubifs ubi0:root /mnt/ubifs
-	# tar xfj wrlinux-image-glibc-std-nxp-ls1046-20170824114330.rootfs.tar.bz2 --numeric-owner -C /mnt/ubifs/
+	# tar xfj wrlinux-image-glibc-std-nxp-ls1046.tar.bz2 --numeric-owner -C /mnt/ubifs/
 	# umount /mnt/ubifs/
 Using the real MTD partition size to set the UBI volume size when trigger the
 ubimkvol command, such as "-s 512MiB".
 
 The followings are for YAFFS2 filesystem:
 
-	# flash_eraseall  /dev/mtd0
+	# flash_erase /dev/mtd0 0 0
 	# mkdir /mnt/yaffs2
 	# mount -t yaffs /dev/mtdblock0 /mnt/yaffs2
-	# tar xfj wrlinux-image-glibc-std-nxp-ls1046-20170824114330.rootfs.tar.bz2 --numeric-owner -C /mnt/yaffs2/
+	# tar xfj wrlinux-image-glibc-std-nxp-ls1046.tar.bz2 --numeric-owner -C /mnt/yaffs2/
 	# umount /mnt/yaffs2/
 
 NOTE: Before writing to the flash memory you need to know its layout, you can
@@ -197,41 +267,9 @@ get this kind information by running 'cat /proc/mtd' on your target.
 
 After loading the kernel, pass kernel arguments as shown:
 
-	root=/dev/mtdblock0 rw rootfstype=jffs2 console=ttyS0,115200
-
-	or: ubi.mtd=0 root=ubi0:root rw rootfstype=ubifs console=ttyS0,115200
+	ubi.mtd=0 root=ubi0:root rw rootfstype=ubifs console=ttyS0,115200
 
 	or: root=/dev/mtdblock0 rw rootfstype=yaffs console=ttyS0,115200
-
-4.4 Boot from SD card
----------------------
-
-4.3.1 Deploy kernel, DTB image and rootfs into your SD card
------------------------------------------------------------
-
-Boot up the system with NFS deployment as described in section 4.1, run fdisk
-command to prepare a partition on the SD card, format it, and then put kernel
-image, DTB image and rootfs into this partition:
-
-	# mke2fs /dev/mmcblk0p1
-	# mkdir /mnt/sd
-	# mount /dev/mmcblk0p1 /mnt/sd
-	# tar wrlinux-image-glibc-std-nxp-ls1046-20170824114330.rootfs.tar.bz2 --numeric-owner -C /mnt/sd
-	# cp Image /mnt/sd/boot
-	# cp ls1046.dtb /mnt/sd/boot
-	# umount /mnt/sd
-
-4.3.2 Set u-boot environment variables and boot from SD card
-------------------------------------------------------------
-
-Pass the kernel parameters as follows:
-	root=/dev/mmcblk0p1 rw console=ttyS0,115200 rootwait
-
-Then run the following command to load the kernel image and DTB image:
-	=> mmc rescan
-	=> ext2load mmc 0:0 $loadaddr /boot/Image
-	=> ext2load mmc 0:0 $fdtaddr /boot/ls1046.dtb
-	=> booti $loadaddr - $fdtaddr
 
 4.4 Creating Partitioned Images(WIC)
 ------------------------------------
@@ -246,12 +284,21 @@ This BSP supports disk images for SD card.
 After build the project, user will get a WIC image under the directory
 tmp/deploy/images/<bsp name>/ ,such as:
 
-tmp/deploy/images/nxp-ls1046/wrlinux-image-glibc-std-nxp-ls1046.wic
+WIC image for SD card:
+tmp-glibc/deploy/images/nxp-ls1046/wrlinux-image-glibc-std-nxp-ls1046.wic
+WIC image for eMMC:
+tmp-glibc/deploy/images/nxp-ls1046/wrlinux-image-glibc-std-nxp-ls1046-emmc.wic
 
-Then user can write the output image to a SD card:
+Then user can write the output image to a SD card. WIC image contains kernel,
+dtb, rootfs and u-boot. User still need to write fman microcode image to SD card
+or eMMC by "dd" command.
 
-WIC image contains kernel, dtb, rootfs and u-boot. We still need to write fman microcode
-image to SD card directly by "dd" command.
+To change default booting configuration in uboot, user can overwrite following
+variable in uboot and save to SD or eMMC by saveenv command:
+
+- kernelfile, define kernel image file name.
+- fdtfile, define device-tree image file name.
+- othbootargs, define additional booting parameters pass to kernel.
 
 4.4.1 Burn images to SD card
 --------------------------
@@ -267,10 +314,28 @@ from git://github.com/qoriq-open-source/fm-ucode.git, then burn it with:
 
 # dd if=fsl_fman_ucode_ls1046_r1.0_106_4_18.bin of=/dev/your_sd_dev bs=512 seek=18432 conv=fsync
 
-4.4.2 Set board switch
+4.4.2 Burn image to eMMC
+------------------------
+
+eMMC is multiplexed with SDHC interface. To access eMMC, user need boot from eMMC
+or SPI flash with emmc enabled rcw. The rcw can be build with:
+$ bitbake rcw
+
+Then emmc enabled rcw can be found at:
+tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb/RR_FFSSPPPH_1133_5559/rcw_1600_qspiboot_emmc.bin
+
+User can update the rcw into SPI flash and boot from SPI flah. Then transfer the
+WIC image for eMMC and fman ucode binary into board, then burn image with:
+
+# dd if=wrlinux-image-glibc-std-nxp-ls1046-emmc.wic of=/dev/mmcblk0
+# dd if=fsl_fman_ucode_ls1046_r1.0_106_4_18.bin of=/dev/mmcblk0 bs=512 seek=18432 conv=fsync
+
+4.4.3 Set board switch
 ----------------------
 
-Board can boot from SD card by setting sw5[1:8] as '00100000'.
+Board can boot from SD card or eMMC by setting sw5[1:8] as '00100000'.
+After power up, if a bootable SD card inserted, then system will boot from SD
+card. Otherwise, system will lookup bootloader from eMMC.
 
 5. Features
 ===========
@@ -337,13 +402,7 @@ Multilib is also supported by this BSP.
 
     bitbake lib32-<pkg-name>
 
-5.3. CPU hotplug
-----------------
-
-Currently, this feature has been disabled from software settings and runtime dtb
-in the latest u-boot(2016.012.0+ga9b437f), which was enabled in the previous.
-
-5.4 kexec/kdump
+5.3 kexec/kdump
 ---------------
 
 To build the boot or capture kernel, use the following option with the configure
@@ -351,18 +410,50 @@ command for your project:
 
      --templates feature/kexec feature/kdump
 
-5.4.1 kexec
------------
-For capture kernel:
-Before boot capture kernel, please add "maxcpus=1" to the boot parameter.
+To reserve a memory region for the capture kernel, pass "crashkernel=512M"
+via the U-Boot command line.
 
-5.4.2 kdump
------------
-For boot kernel:
-To reserve a memory region for the capture kernel, pass "crashkernel=256M@2304M"
-via the command line.
+NOTES:
+1. Use vmlinux as a secondary kernel. It can be found in the directory
+   tmp-glibc/work/<bsp name>-wrs-linux/linux-yocto/<kernel version>/linux-<bsp name>-<kernel type>-build/vmlinux
 
-For capture kernel:
-Please use "Image" as boot capture kernel which can be found in the path
-build/tmp/deploy/images/nxp-ls1046. Before boot capture kernel, please add
-"maxcpus=1" to the boot parameter.
+2. 512 MB (the size of the memory reserved for crash kernel) is the
+   recommended amount of memory. If you add more features to the kernel, you
+   can increase this value to accommodate the capture kernel.
+
+3. Kdump: PCI-MSI and SMP is unsupported in 2nd kernel.
+   User needs to append two arguments "pci=nomsi maxcpus=1".
+   Since this 2nd kernel operates under significantly constrained
+   initialization conditions and is not meant to be a "replacement" kernel.
+   Rather it has a single goal -- to enable data collection with respect to
+   the issue that impacted the initial kernel, and nothing else.
+
+For more detailed information about kdump, please refer to
+Documentation/kdump/kdump.txt in the kernel source tree.
+
+5.4 DPDK
+--------
+5.4.1 Boot Arguments
+--------------------
+The following boot arguments can be used in order to obtain the best performance
+for DPDK applications:
+ default_hugepagesz=2MB hugepagesz=2MB hugepages=448 isolcpus=1-3 bportals=s0 qportals=s0
+
+To use DPDK applications, user need load specific DTB, fsl-ls1046a-rdb-usdpaa.dtb.
+The DTB can be found in tmp-glibc/deploy/images/nxp-ls1046/, and it alread
+installed into WIC image.
+
+5.4.2 Sample Applications
+-----------------------
+In order to get the sample applications provided by the DPDK, you need to enable
+bsp-extras template. You can use the steps like the following to run the sample
+applications. Take the l2fwd as example:
+  1. Configure the DPAA platform:
+	export DPAA_NUM_RX_QUEUES=1
+	fmc -c /usr/share/dpdk/usdpaa_config_ls1046.xml \
+		 -p /usr/share/dpdk/usdpaa_policy_hash_ipv4_1queue.xml -a
+	mkdir /mnt/hugepages
+	mount -t hugetlbfs none /mnt/hugepages
+
+  2. Run the layer 2 forwarding application:
+       /usr/share/examples/l2fwd/l2fwd -c 0x2 -n 1 -- -p 0x1 -q 1
