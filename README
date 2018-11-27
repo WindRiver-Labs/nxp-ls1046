@@ -50,7 +50,7 @@ The following table summarizes the valid Wind River Linux distros for this BSP.
   +--------------+-------------+-------------+-------------+
 
 For the supported kernel type for this BSP, please check the TARGET_SUPPORTED_KTYPES
-by running 'bitbake -e | grep "^TARGET_SUPPORTED_KTYPES"'.
+by running 'bitbake -e virtual/kernel | grep "^TARGET_SUPPORTED_KTYPES="'.
 
 3. Board Specific Patches
 =========================
@@ -138,11 +138,11 @@ Start address 	End address 	Image 						Maximum size
 0x0_4000_0000 	0x0_400F_FFFF 	RCW + PBI 					1 MB
 0x0_4010_0000 	0x0_401F_FFFF 	U-Boot image 					1 MB
 0x0_4020_0000 	0x0_402F_FFFF 	U-Boot environment 				1 MB
-0x0_4030_0000 	0x0_403F_FFFF 	Fman microcode 					1 MB
-0x0_4040_0000 	0x0_404F_FFFF 	Unified extensible firmware interface (UEFI) 	1 MB
-0x0_4050_0000 	0x0_406F_FFFF 	Primary Protected Application (PPA) 		2 MB
+0x0_4030_0000 	0x0_403F_FFFF 	Reserved 					1 MB
+0x0_4040_0000 	0x0_404F_FFFF 	Primary Protected Application (PPA) 		1 MB
+0x0_4050_0000 	0x0_406F_FFFF 	Unified extensible firmware interface (UEFI) 	2 MB
 0x0_4070_0000 	0x0_408F_FFFF 	Secure boot header + bootscript 		2 MB
-0x0_4090_0000 	0x0_40FF_FFFF 	Reserved 					7 MB
+0x0_4090_0000 	0x0_40FF_FFFF 	Fman microcode 					7 MB
 0x0_4100_0000 	0x0_43FF_FFFF 	FIT image 					48 MB
 
 Virtual bank 4:
@@ -150,11 +150,11 @@ Start address 	End address 	Image 						Maximum size
 0x0_4400_0000 	0x0_440F_FFFF 	RCW + PBI 					1 MB
 0x0_4410_0000 	0x0_441F_FFFF 	U-Boot image 					1 MB
 0x0_4420_0000 	0x0_442F_FFFF 	U-Boot environment 				1 MB
-0x0_4430_0000 	0x0_443F_FFFF 	Fman microcode 					1 MB
-0x0_4440_0000 	0x0_444F_FFFF 	UEFI 						1 MB
-0x0_4450_0000 	0x0_446F_FFFF 	PPA 						2 MB
+0x0_4430_0000 	0x0_443F_FFFF 	Reserved 					1 MB
+0x0_4440_0000 	0x0_444F_FFFF 	Primary Protected Application (PPA)		1 MB
+0x0_4450_0000 	0x0_446F_FFFF 	Unified extensible firmware interface (UEFI)	2 MB
 0x0_4470_0000 	0x0_448F_FFFF 	Secure boot header + bootscript 		2 MB
-0x0_4490_0000 	0x0_44FF_FFFF 	Reserved 					7 MB
+0x0_4490_0000 	0x0_44FF_FFFF 	Fman microcode					7 MB
 0x0_4500_0000 	0x0_47FF_FFFF 	FIT image 					48 MB
 
 4.2.2 Programming a new bootloader
@@ -183,7 +183,7 @@ to the alternate bank:
 =>tftp 82000000 <rcw_file_name>.bin
 =>sf probe 0:1
 =>sf erase 0 +$filesize
-=>sf write 82000000 0 $filesize;
+=>sf write 82000000 0 $filesize
 =>cpld reset altbank
 
 To program a new microcode, first switch to QSPI bank 0 by either performing
@@ -193,8 +193,8 @@ is the offset of microcode in the QSPI flash memory. Then, run the following
 commands at the U-Boot prompt to program the microcode to the boot device:
 =>tftp 83000000 <ucode_file_name>.bin
 =>sf probe 0:1
-=>sf erase 300000 +$filesize
-=>sf write 83000000 300000 $filesize
+=>sf erase 900000 +$filesize
+=>sf write 83000000 900000 $filesize
 =>cpld reset altbank
 
 To program a PPA firmware, first switch to QSPI bank 0 by either performing
@@ -204,8 +204,8 @@ is the offset of firmware in the QSPI flash memory. Then, run the following
 commands at the U-Boot prompt to program the microcode to the boot device:
 =>tftp 83000000 ppa.itb
 =>sf probe 0:1
-=>sf erase 500000 +$filesize
-=>sf write 83000000 500000 $filesize
+=>sf erase 400000 +$filesize
+=>sf write 83000000 400000 $filesize
 =>cpld reset altbank
 
 NOTE:
@@ -213,22 +213,22 @@ NOTE:
 2. uboot can be build with:
 $ bitbake u-boot-qoriq
 After build, the binary can be found at:
-tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb/u-boot.bin-qspi
+tmp-glibc/deploy/images/nxp-ls1046/u-boot.bin-qspi
 3. rcw can be build with:
 $ bitbake rcw
 After build, the binary can be found at:
-tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb/rcw
+tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb
 4. ppa firmware can be build with:
 $ bitbake ppa
 After build, the binary can be found at:
-tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb/ppa.itb
+tmp-glibc/deploy/images/nxp-ls1046/ppa.itb
 5.fman ucode can be download from:
 from git://github.com/qoriq-open-source/fm-ucode.git
 
 4.2.3 Set board switch
 ----------------------
 
-Board can boot from SPI flash by setting sw5[1:8] as '00100100'.
+Board can boot from SPI flash by setting sw5[1:8] as '00100010'.
 
 
 4.3 NAND Flash Root File System
