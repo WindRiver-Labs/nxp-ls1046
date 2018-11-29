@@ -242,14 +242,12 @@ options:
 After build, program the image into flash with following command:
 For ubifs filesystems:
 	# flash_erase /dev/mtd0 0 0
-	# ubiattach /dev/ubi_ctrl -m x
-	# ubimkvol /dev/ubi0 -N root -s xxMiB
+	# ubiattach /dev/ubi_ctrl -m 0
+	# ubimkvol /dev/ubi0 -N root -s 480MiB
 	# mkdir /mnt/ubifs
 	# mount -t ubifs ubi0:root /mnt/ubifs
 	# tar xfj wrlinux-image-glibc-std-nxp-ls1046.tar.bz2 --numeric-owner -C /mnt/ubifs/
 	# umount /mnt/ubifs/
-Using the real MTD partition size to set the UBI volume size when trigger the
-ubimkvol command, such as "-s 512MiB".
 
 The followings are for YAFFS2 filesystem:
 
@@ -260,7 +258,8 @@ The followings are for YAFFS2 filesystem:
 	# umount /mnt/yaffs2/
 
 NOTE: Before writing to the flash memory you need to know its layout, you can
-get this kind information by running 'cat /proc/mtd' on your target.
+get this kind information by running 'cat /proc/mtd' on your target. please
+ensure that an appropriate file system is created to fit the available space.
 
 4.3.2 Deployment
 ----------------
@@ -457,3 +456,9 @@ applications. Take the l2fwd as example:
 
   2. Run the layer 2 forwarding application:
        /usr/share/examples/l2fwd/l2fwd -c 0x2 -n 1 -- -p 0x1 -q 1
+
+5.5 LS1026A
+-----------
+
+Setting sw3[2] to '0' can disable core 3 and 4 on SOC to make it act as dual
+core processor LS1026A.
