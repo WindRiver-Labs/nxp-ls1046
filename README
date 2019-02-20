@@ -27,7 +27,7 @@ is done automatically when using the Wind River configure wrapper.
 
 License
 -------
-Copyright (C) 2018 Wind River Systems, Inc.
+Copyright (C) 2019 Wind River Systems, Inc.
 
 The right to copy, distribute or otherwise make use of this software may
 be licensed only pursuant to the terms of an applicable Wind River license
@@ -449,13 +449,14 @@ bsp-extras template. You can use the steps like the following to run the sample
 applications. Take the l2fwd as example:
   1. Configure the DPAA platform:
 	export DPAA_NUM_RX_QUEUES=1
-	fmc -c /usr/share/dpdk/usdpaa_config_ls1046.xml \
-		 -p /usr/share/dpdk/usdpaa_policy_hash_ipv4_1queue.xml -a
+	export DPAA_FMC_MODE=1
+	fmc -c /usr/bin/dpdk-example/extras/dpaa/usdpaa_config_ls1046.xml \
+		 -p /usr/bin/dpdk-example/extras/dpaa/usdpaa_policy_hash_ipv4_1queue.xml -a
 	mkdir /mnt/hugepages
 	mount -t hugetlbfs none /mnt/hugepages
 
   2. Run the layer 2 forwarding application:
-       /usr/share/examples/l2fwd/l2fwd -c 0x2 -n 1 -- -p 0x1 -q 1
+       /usr/bin/dpdk-example/l2fwd -c 0x2 -n 1 -- -p 0x1 -q 1
 
 5.5 LS1026A
 -----------

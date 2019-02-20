@@ -22,6 +22,8 @@ This BSP supports the following boards:
 
   - 2018/12 (US119362): Wind River Linux 10.17.41 RCPL13. Standard and preempt-rt
                        support for LS1046A LS1046A-RDB board based on NXP LSDK1712.
+  - 2019/03 (US129467): Wind River Linux 10.18 RCPL05. Standard and preempt-rt
+                       support for LS1046A LS1046A-RDB board based on NXP LSDK1812.
 
 3. BSP Features
 ===============
@@ -92,15 +94,15 @@ LS1046A rev1.0:
 	Processor:              LS1046AE Rev1.0 (0x87070010)
 	Board Revision:	        REV B2, CPLD: V2.3, PCBA: V2.0
 	BootLoader:             U-Boot
-	BootLoader Version:     U-Boot 2017.07+fsl+gc249f5f072
+	BootLoader Version:     U-Boot 2018.09-gc08de7c3c9
 	FMAN Firmware:          106.4.18
-	PPA Firmware:           LSDK-18.06-dirty
+	PPA Firmware:           LSDK-18.09-dirty
 
 LS1026A rev1.0:
 	Processor:              LS1026AE Rev1.0 (0x87070810)
 	Board Revision:	        REV B2, CPLD: V2.3, PCBA: V2.0
 	BootLoader:             U-Boot
-	BootLoader Version:     U-Boot 2017.07+fsl+gc249f5f072
+	BootLoader Version:     U-Boot 2018.09-gc08de7c3c9
 	FMAN Firmware:          106.4.18
-	PPA Firmware:           LSDK-18.06-dirty
+	PPA Firmware:           LSDK-18.09-dirty
 

@@ -1,1 +1,2 @@
 COMPATIBLE_MACHINE_nxp-ls1046 = "nxp-ls1046"
+TARGET_ARCH_FMLIB = "arm"
