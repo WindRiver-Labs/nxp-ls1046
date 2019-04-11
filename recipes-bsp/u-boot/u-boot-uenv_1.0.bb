@@ -15,7 +15,7 @@ do_compile(){
 setenv machine_name nxp-ls1046a
 if test -e \${devtype} \${devnum}:\${distro_bootpart} \$prefix\${kernelfile}; then echo Found kernel @ \$prefix\${kernelfile}; else setenv kernelfile Image; fi
 setenv loadkernel load \${devtype} \${devnum}:\${distro_bootpart} \${kernel_addr_r} \$prefix\${kernelfile}
-if test -e \${devtype} \${devnum}:\${distro_bootpart} \$prefix\${fdtfile}; then echo Found dtb @ \$prefix\${fdtfile}; else setenv fdtfile devicetree-Image-fsl-ls1046a-rdb-sdk.dtb; fi
+if test -e \${devtype} \${devnum}:\${distro_bootpart} \$prefix\${fdtfile}; then echo Found dtb @ \$prefix\${fdtfile}; else setenv fdtfile fsl-ls1046-rdb-sdk.dtb; fi
 setenv loaddtb load \${devtype} \${devnum}:\${distro_bootpart} \${fdt_addr_r} \$prefix\${fdtfile}
 setenv bootargs console=\${console},\${baudrate} \${smp} root=/dev/mmcblk0p1 rw rootwait ip=dhcp \${othbootargs}
 run loaddtb
