@@ -4,4 +4,4 @@
 
 require linux-yocto-nxp-ls1046.inc
 
-KBRANCH_nxp-ls1046 = "v4.18/standard/preempt-rt/nxp-ls/lsdk-1812/${KMACHINE}"
+KBRANCH_nxp-ls1046 = "v5.2/standard/nxp-lsdk-20.04/nxp-ls1046"

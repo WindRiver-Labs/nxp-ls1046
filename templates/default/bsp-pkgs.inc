@@ -1,6 +1,5 @@
 IMAGE_INSTALL += "\
 	u-boot-uenv \
-	ptpd \
-	dpdk \
+	linuxptp \
 	fmc \
 "

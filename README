@@ -72,8 +72,9 @@ To get a list of patches applied to the kernel specific to this BSP
 along with patch descriptions use git whatchanged on the default
 kernel (git whatchanged <kernel_type>..<bsp_name>). For example:
 
-	# cd tmp-glibc/work-shared/<bsp_name>/kernel-source
-	# git whatchanged standard/base..HEAD
+  # cd tmp-glibc/work-shared/<bsp_name>/kernel-source
+  # git whatchanged v5.2/base..v5.2/standard/nxp-lsdk-20.04/nxp-ls1046
+
 
 4. Boot Instructions
 ====================
@@ -145,98 +146,25 @@ for storing images (RCW/UBoot/kernel/PPA/FMan microcode):
  - Flash memory connected to chip select 1 (CS1): Represents the alternative virtual bank (bank 4)
 Below description shows the memory addresses (memory map) for storing board configuration data on 
 virtual bank 0 and virtual bank 4.
+4.2.2 NXP's pre-built image
+--------------------------
 
-Virtual bank 0:
-Start address 	End address 	Image 						Maximum size
-0x0_4000_0000 	0x0_400F_FFFF 	RCW + PBI 					1 MB
-0x0_4010_0000 	0x0_401F_FFFF 	U-Boot image 					1 MB
-0x0_4020_0000 	0x0_402F_FFFF 	U-Boot environment 				1 MB
-0x0_4030_0000 	0x0_403F_FFFF 	Reserved 					1 MB
-0x0_4040_0000 	0x0_404F_FFFF 	Primary Protected Application (PPA) 		1 MB
-0x0_4050_0000 	0x0_406F_FFFF 	Unified extensible firmware interface (UEFI) 	2 MB
-0x0_4070_0000 	0x0_408F_FFFF 	Secure boot header + bootscript 		2 MB
-0x0_4090_0000 	0x0_40FF_FFFF 	Fman microcode 					7 MB
-0x0_4100_0000 	0x0_43FF_FFFF 	FIT image 					48 MB
+NXP provides a pre-built image which contains U-Boot, RCW, etc.
+Please download it through:
 
-Virtual bank 4:
-Start address 	End address 	Image 						Maximum size
-0x0_4400_0000 	0x0_440F_FFFF 	RCW + PBI 					1 MB
-0x0_4410_0000 	0x0_441F_FFFF 	U-Boot image 					1 MB
-0x0_4420_0000 	0x0_442F_FFFF 	U-Boot environment 				1 MB
-0x0_4430_0000 	0x0_443F_FFFF 	Reserved 					1 MB
-0x0_4440_0000 	0x0_444F_FFFF 	Primary Protected Application (PPA)		1 MB
-0x0_4450_0000 	0x0_446F_FFFF 	Unified extensible firmware interface (UEFI)	2 MB
-0x0_4470_0000 	0x0_448F_FFFF 	Secure boot header + bootscript 		2 MB
-0x0_4490_0000 	0x0_44FF_FFFF 	Fman microcode					7 MB
-0x0_4500_0000 	0x0_47FF_FFFF 	FIT image 					48 MB
+ wget https://www.nxp.com/lgfiles/sdk/lsdk2004/firmware_ls1046ardb_uboot_qspiboot.img
 
-4.2.2 Programming a new bootloader
-----------------------------------
+and burn it to the target board under the U-Boot prompt using the commands below:
 
-By default, an existing U-Boot is run in bank 0 after the system is powered on or
-after a hard reset is performed. To flash U-Boot to the alternate bank, first
-switch to bank 0 by performing a hard reset or by typing reset. Then use the
-following commands to flash a new U-Boot into the alternate bank and then switch
-to that alternate bank where the new U-Boot is flashed:
+=> tftp a0000000 firmware_ls1046ardb_uboot_qspiboot.img
+=> sf probe 0:1
+=> sf erase 0 +$filesize && sf write a0000000 0 $filesize
 
-=>tftp 82000000 u-boot.bin-qspi
-=>sf probe 0:1
-=>sf erase 100000 +$filesize
-=>sf write 82000000 100000 $filesize
-=>cpld reset altbank
+Then use
 
-In the LS1046ARDB, you can program a new RCW to the QSPI flash memory.
-To program a new RCW, first switch to QSPI bank 0 by either performing
-a hard reset or typing reset. Next, load the new RCW to RAM by downloading
-it via TFTP and then copying it to flash offset 0x0, which is the offset
-address of RCW in the QSPI flash memory. Then, run the following commands
-at the U-Boot prompt to program the RCW to the QSPI flash memory and reset
-to the alternate bank:
+=> cpld reset altbank
 
-=>tftp 82000000 <rcw_file_name>.bin
-=>sf probe 0:1
-=>sf erase 0 +$filesize
-=>sf write 82000000 0 $filesize
-=>cpld reset altbank
-
-To program a new microcode, first switch to QSPI bank 0 by either performing
-a hard reset or typing cpld reset. Next, load the new microcode to RAM by
-downloading it via TFTP and then writing it to flash offset 0x300000, which
-is the offset of microcode in the QSPI flash memory. Then, run the following
-commands at the U-Boot prompt to program the microcode to the boot device:
-=>tftp 83000000 <ucode_file_name>.bin
-=>sf probe 0:1
-=>sf erase 900000 +$filesize
-=>sf write 83000000 900000 $filesize
-=>cpld reset altbank
-
-To program a PPA firmware, first switch to QSPI bank 0 by either performing
-a hard reset or typing cpld reset. Next, load the new microcode to RAM by
-downloading it via TFTP and then writing it to flash offset 0x300000, which
-is the offset of firmware in the QSPI flash memory. Then, run the following
-commands at the U-Boot prompt to program the microcode to the boot device:
-=>tftp 83000000 ppa.itb
-=>sf probe 0:1
-=>sf erase 400000 +$filesize
-=>sf write 83000000 400000 $filesize
-=>cpld reset altbank
-
-NOTE:
-1. You can use the sf probe 0:0 to program the microcode to the current bank.
-2. uboot can be build with:
-$ bitbake u-boot-qoriq
-After build, the binary can be found at:
-tmp-glibc/deploy/images/nxp-ls1046/u-boot.bin-qspi
-3. rcw can be build with:
-$ bitbake rcw
-After build, the binary can be found at:
-tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb
-4. ppa firmware can be build with:
-$ bitbake ppa
-After build, the binary can be found at:
-tmp-glibc/deploy/images/nxp-ls1046/ppa.itb
-5.fman ucode can be download from:
-from git://github.com/qoriq-open-source/fm-ucode.git
+to switch to vbank4.
 
 4.2.3 Set board switch
 ----------------------
@@ -290,23 +218,22 @@ partitioned image on a SD card. The wic command
 generates partitioned images from existing OpenEmbedded build artifacts.
 User can refer to the below URL to get more WIC details:
 
-http://www.yoctoproject.org/docs/2.2/mega-manual/mega-manual.html#creating-partitioned-images
+http://www.yoctoproject.org/docs/2.6/mega-manual/mega-manual.html#creating-partitioned-images-using-wic
 
 This BSP supports disk images for SD card.
 After build the project, user will get a WIC image under the directory
-tmp/deploy/images/<bsp name>/ ,such as:
+tmp-glibc/deploy/images/<bsp name>/ ,such as:
 
 WIC image for SD card:
-tmp-glibc/deploy/images/nxp-ls1046/wrlinux-image-glibc-std-nxp-ls1046.wic
-WIC image for eMMC:
-tmp-glibc/deploy/images/nxp-ls1046/wrlinux-image-glibc-std-nxp-ls1046-emmc.wic
+tmp-glibc/deploy/images/nxp-ls1046/wrlinux-image-std-nxp-ls1046.wic
+
 
 Then user can write the output image to a SD card. WIC image contains kernel,
 dtb, rootfs and u-boot. User still need to write fman microcode image to SD card
-or eMMC by "dd" command.
+by "dd" command.
 
 To change default booting configuration in uboot, user can overwrite following
-variable in uboot and save to SD or eMMC by saveenv command:
+variable in uboot and save to SD by saveenv command:
 
 - kernelfile, define kernel image file name.
 - fdtfile, define device-tree image file name.
@@ -319,84 +246,68 @@ To burn uboot and WIC images to SD card, user need to execute two steps:
 
 1) Burn WIC image
 
-# dd if=wrlinux-image-glibc-std-nxp-ls1046.wic of=/dev/your_sd_dev
+# dd if=wrlinux-image-std-nxp-ls1046.wic of=/dev/your_sd_dev
 
-2) User can find fsl_fman_ucode_ls1046_r1.0_106_4_18.bin
-from git://github.com/qoriq-open-source/fm-ucode.git, then burn it with:
+2) Burn NXP pre-built SD image
 
-# dd if=fsl_fman_ucode_ls1046_r1.0_106_4_18.bin of=/dev/your_sd_dev bs=512 seek=18432 conv=fsync
+NXP provides a pre-built SD image which contains U-Boot, RCW, firmware, etc.
+Please download it through:
+"wget https://www.nxp.com/lgfiles/sdk/lsdk2004/firmware_ls1046ardb_uboot_sdboot.img"
 
-4.4.2 Burn image to eMMC
-------------------------
+# dd if=firmware_ls1046ardb_uboot_sdboot.img of=/dev/your_sd_dev bs=512 seek=8 conv=fsync
 
-eMMC is multiplexed with SDHC interface. To access eMMC, user need boot from eMMC
-or SPI flash with emmc enabled rcw. The rcw can be build with:
-$ bitbake rcw
 
-Then emmc enabled rcw can be found at:
-tmp-glibc/deploy/images/nxp-ls1046/rcw/ls1046ardb/RR_FFSSPPPH_1133_5559/rcw_1600_qspiboot_emmc.bin
-
-User can update the rcw into SPI flash and boot from SPI flah. Then transfer the
-WIC image for eMMC and fman ucode binary into board, then burn image with:
-
-# dd if=wrlinux-image-glibc-std-nxp-ls1046-emmc.wic of=/dev/mmcblk0
-# dd if=fsl_fman_ucode_ls1046_r1.0_106_4_18.bin of=/dev/mmcblk0 bs=512 seek=18432 conv=fsync
-
-4.4.3 Set board switch
-----------------------
-
-Board can boot from SD card or eMMC by setting sw5[1:8] as '00100000'.
-After power up, if a bootable SD card inserted, then system will boot from SD
-card. Otherwise, system will lookup bootloader from eMMC.
+Note: NXP does not provide a pre-built eMMC image which contains U-Boot, RCW, firmware, etc.
+So we can not support WIC for eMMC.
 
 5. Features
 ===========
 
-5.1 IEEE 1588 PTP testing
--------------------------
+5.1 PTP by ptp4l
+----------------
+1) To configure one machine as master:
 
-5.1.1 Introduction
-------------------
+    root@nxp-ls1046:~# ptp4l -i eth0 -p /dev/ptp0 -m
+    ptp4l[175.037]: selected /dev/ptp0 as PTP clock
+    ptp4l[175.038]: driver changed our HWTSTAMP options
+    ptp4l[175.038]: tx_type   1 not 1
+    ptp4l[175.038]: rx_filter 1 not 12
+    ptp4l[175.038]: port 1: INITIALIZING to LISTENING on INITIALIZE
+    ptp4l[175.038]: port 0: INITIALIZING to LISTENING on INITIALIZE
+    ptp4l[175.038]: port 1: link up
+    ptp4l[182.126]: port 1: LISTENING to MASTER on ANNOUNCE_RECEIPT_TIMEOUT_EXPIRES
+    ptp4l[182.126]: selected best master clock 720ff8.fffe.2e3c31
+    ptp4l[182.126]: assuming the grand master role
 
-This testing method is based on PTPd project, only some basic testing commands
-have been tested on this BSP because the accurate PTP testing scenario is a bit
-complicated according to IEEE PTPv2.
+2) Another as slave:
 
-5.1.2 Usage and verification
-----------------------------
-
-Two boards are necessary for this case, one for master, another is slave,
-the following commands show to use PTP time as stamping mode based on the
-peer delay (P2P) mechanism:
-
-     master :
-     root@nxp-ls1046:~# ptpd2 -i eth2 -MV
-     02:36:18.339405 ptpd2[634].startup (info)      (___) Configuration OK
-     02:36:18.340935 ptpd2[634].startup (info)      (___) Successfully acquired lock on /var/run/ptpd2.lock
-     02:36:18.341410 ptpd2[634].startup (notice)    (___) PTPDv2 started successfully on eth2 using "masteronly" preset (PID 634)
-     02:36:18.341506 ptpd2[634].startup (info)      (___) TimingService.PTP0: PTP service init
-     02:36:18.343434, init,
-     02:36:18.448931 ptpd2[634].eth2 (notice)    (lstn_init) Now in state: PTP_LISTENING
-     02:36:18.449046, lstn_init,  1
-     02:36:28.341629 ptpd2[634].eth2 (notice)    (lstn_init) TimingService.PTP0: elected best TimingService
-     02:36:28.341749 ptpd2[634].eth2 (info)      (lstn_init) TimingService.PTP0: acquired clock control
-     02:36:30.452226 ptpd2[634].eth2 (notice)    (mst) Now in state: PTP_MASTER, Best master: 00049ffffe03cbc9(unknown)/1 (self)
-     #Timestamp, State, Clock ID, One Way Delay, Offset From Master, Slave to Master, Master to Slave, Observed Drift, Last packet Received, One Way Delay Mean, One Way Delay Std Dev, Offset From Master Mean, Offset From Master Std Dev, Observed Drift Mean, Observed Drift Std Dev, raw delayMS, raw delaySM
-
-     slave:
-     root@nxp-ls1046:~# ptpd2 -i eth3 -sV
-     02:39:54.066864 ptpd2[564].startup (info)      (___) Configuration OK
-     02:39:54.067923 ptpd2[564].startup (warning)   (___) Interface eth6 seems to be down. PTPd will not operate correctly until it's up.
-     02:39:54.068092 ptpd2[564].startup (info)      (___) Successfully acquired lock on /var/run/ptpd2.lock
-     02:39:54.068523 ptpd2[564].startup (notice)    (___) PTPDv2 started successfully on eth6 using "slaveonly" preset (PID 564)
-     02:39:54.068596 ptpd2[564].startup (info)      (___) TimingService.PTP0: PTP service init
-     02:39:54.068711, init,
-     02:39:54.069636 ptpd2[564].eth6 (warning)   (init) Interface eth6 seems to be down. PTPd will not operate correctly until it's up.
-     02:39:54.070643 ptpd2[564].eth6 (info)      (init) Observed_drift loaded from kernel: 0 ppb
-     02:39:54.170948 ptpd2[564].eth6 (notice)    (lstn_init) Now in state: PTP_LISTENING
-     02:39:54.171025, lstn_init,  1
-     02:40:04.068702 ptpd2[564].eth6 (notice)    (lstn_init) TimingService.PTP0: elected best TimingService
-     02:40:04.068818 ptpd2[564].eth6 (info)      (lstn_init) TimingService.PTP0: acquired clock control
+    root@nxp-ls1046:~# ptp4l -i eth0 -p /dev/ptp0 -m
+    ptp4l[233.257]: selected /dev/ptp0 as PTP clock
+    ptp4l[233.258]: driver changed our HWTSTAMP options
+    ptp4l[233.258]: tx_type   1 not 1
+    ptp4l[233.258]: rx_filter 1 not 12
+    ptp4l[233.258]: port 1: INITIALIZING to LISTENING on INITIALIZE
+    ptp4l[233.258]: port 0: INITIALIZING to LISTENING on INITIALIZE
+    ptp4l[233.258]: port 1: link up
+    ptp4l[233.816]: port 1: new foreign master 22fa84.fffe.480bac-1
+    ptp4l[237.816]: selected best master clock 22fa84.fffe.480bac
+    ptp4l[237.816]: port 1: LISTENING to UNCALIBRATED on RS_SLAVE
+    ptp4l[239.815]: master offset -5567669943 s0 freq      +0 path delay     18980
+    ptp4l[240.815]: master offset -5567678538 s1 freq   -8595 path delay     20350
+    ptp4l[241.815]: master offset     -11555 s2 freq  -20150 path delay     20350
+    ptp4l[241.815]: port 1: UNCALIBRATED to SLAVE on MASTER_CLOCK_SELECTED
+    ptp4l[242.815]: master offset      23910 s2 freq  +11849 path delay     20350
+    ptp4l[243.815]: master offset       9475 s2 freq   +4587 path delay     20350
+    ptp4l[244.815]: master offset       7625 s2 freq   +5579 path delay     20350
+    ptp4l[245.815]: master offset     -23970 s2 freq  -23728 path delay     21720
+    ptp4l[246.815]: master offset      15980 s2 freq   +9031 path delay     20350
+    ptp4l[247.815]: master offset       6085 s2 freq   +3930 path delay     20715
+    ptp4l[248.816]: master offset      -1185 s2 freq   -1515 path delay     20715
+    ptp4l[249.816]: master offset       5018 s2 freq   +4333 path delay     18982
+    ptp4l[250.816]: master offset      -8420 s2 freq   -7600 path delay     20715
+    ptp4l[251.816]: master offset     -20343 s2 freq  -22049 path delay     19848
+    ptp4l[252.816]: master offset      22082 s2 freq  +14273 path delay     19848
+    ptp4l[253.816]: master offset     -18512 s2 freq  -19696 path delay     21217
 
 5.2. Multilib
 -------------
@@ -408,7 +319,7 @@ Multilib is also supported by this BSP.
 
 1. To add 32-bit multilib support for an existing project, use:
 
-    bitbake lib32-wrlinux-image-glibc-std
+    bitbake lib32-wrlinux-image-std
 
 2. To add 32-bit mulilib support for a specific package, use:
 
@@ -440,12 +351,25 @@ NOTES:
    Rather it has a single goal -- to enable data collection with respect to
    the issue that impacted the initial kernel, and nothing else.
 
+4. Same with LSDK, DPAA1 should be compiled out while creating the image for
+   dump-capture 2nd kernel. With "CONFIG_FSL_SDK_DPA=n" & "CONFIG_FSL_SDK_DPAA_ETH=n"
+   in the kernel .config setting to disable DPAA1, can choose PCIe device "CONFIG_E1000E=y"
+   as a replacement to make NFS working.
+   Please refer to the chapter 7.3 "Known bugs, limitations or technical issues" of "LSDKUG_Rev20.04.pdf".
+
 For more detailed information about kdump, please refer to
 Documentation/kdump/kdump.txt in the kernel source tree.
 
 5.4 DPDK
---------
-5.4.1 Boot Arguments
+========
+
+7.4.1 Install DPDK
+------------------
+By default, the DPDK user space package is not installed. In order to install the
+package to your rootfs, you should add the below setting to
+"${buildprj}/build/conf/local.conf":
+	IMAGE_INSTALL_append = " dpdk"
+5.4.2 Boot Arguments
 --------------------
 The following boot arguments can be used in order to obtain the best performance
 for DPDK applications:
@@ -455,7 +379,7 @@ To use DPDK applications, user need load specific DTB, fsl-ls1046a-rdb-usdpaa.dt
 The DTB can be found in tmp-glibc/deploy/images/nxp-ls1046/, and it alread
 installed into WIC image.
 
-5.4.2 Sample Applications
+5.4.3 Sample Applications
 -----------------------
 In order to get the sample applications provided by the DPDK, you need to enable
 bsp-extras template. You can use the steps like the following to run the sample
@@ -463,13 +387,13 @@ applications. Take the l2fwd as example:
   1. Configure the DPAA platform:
 	export DPAA_NUM_RX_QUEUES=1
 	export DPAA_FMC_MODE=1
-	fmc -c /usr/bin/dpdk-example/extras/dpaa/usdpaa_config_ls1046.xml \
-		 -p /usr/bin/dpdk-example/extras/dpaa/usdpaa_policy_hash_ipv4_1queue.xml -a
+	fmc -c /usr/share/dpdk/dpaa/usdpaa_config_ls1046.xml \
+		 -p /usr/share/dpdk/dpaa/usdpaa_policy_hash_ipv4_1queue.xml -a
 	mkdir /mnt/hugepages
 	mount -t hugetlbfs none /mnt/hugepages
 
   2. Run the layer 2 forwarding application:
-       /usr/bin/dpdk-example/l2fwd -c 0x2 -n 1 -- -p 0x1 -q 1
+       /usr/share/dpdk/examples/l2fwd -c 0x2 -n 1 -- -p 0x1 -q 1
 
 5.5 LS1026A
 -----------
